@@ -1,0 +1,24 @@
+{
+  "name": "cproxy",
+  "version": "1.0.0",
+  "description": "cProxy - Run Python ASGI or other background servers on shared hosting (like cPanel) using a Node.js HTTP+WebSocket proxy.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "keywords": [
+    "proxy",
+    "asgi",
+    "fastapi",
+    "websocket",
+    "shared-hosting",
+    "cpanel",
+    "reverse-proxy",
+    "node-proxy"
+  ],
+  "author": "Arif Chowdhury",
+  "license": "MIT",
+  "dependencies": {
+    "http-proxy": "^1.18.1"
+  }
+}
