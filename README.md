@@ -1,93 +1,54 @@
 # cProxy
 
-> Run background servers like Python ASGI apps on shared hosting using a Node.js proxy.
+cProxy is a small Node.js HTTP + WebSocket proxy that starts your Python backend on demand. Built for shared hosting (like cPanel) where processes get killed and you can't run a persistent service.
 
-Many shared hosting environments (like cPanel) **only allow Node.js apps** to run persistently.  
-If you want to run a **Python ASGI app** (FastAPI, Starlette, Django Channels) or any other server that isn't officially supported,  
-you can use **cProxy** to handle incoming HTTP & WebSocket requests and forward them to your backend server.
+When a request arrives and the backend isn't running, the proxy queues it, launches the backend, waits until the port is open, then forwards the queued requests. If the backend doesn't come up in time, queued requests get a `503`.
 
----
+## Requirements
 
-## 🌐 How cProxy Works
+- Node.js 14+
+- A Python backend listening on a local port
 
-1. All requests first reach **cProxy** (Node.js).  
-2. **cProxy** forwards the requests to your backend running on a local port.  
-3. If the backend is **offline**, cProxy:
-   - Queues incoming HTTP & WebSocket requests temporarily.
-   - Waits for the backend to become available.
-4. Once the backend is running:
-   - All queued requests are sent to it.
-   - New requests are handled instantly.
-
----
-
-## 🐍 Example: Python ASGI Backend
-
-1. **Create a simple Python app** (FastAPI example):
-
-```python
-# app.py
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/")
-async def home():
-    return {"message": "Hello from FastAPI on shared hosting!"}
-````
-
-2. **Run your ASGI server locally** on a free port (e.g., 8069):
-
-```bash
-uvicorn app:app --host 127.0.0.1 --port 8069
-```
-
-> Your Node.js proxy will forward requests to this local port.
-
----
-
-## 🟢 Node.js Proxy Setup
-
-1. **Install dependencies**:
+## Install
 
 ```bash
 npm install
 ```
 
-2. **Start the proxy**:
+## Configuration
+
+All settings are environment variables. See `.env.example` for the full list.
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `8080` | Port the proxy listens on |
+| `BACKEND_HOST` | `127.0.0.1` | Backend host |
+| `BACKEND_PORT` | `8069` | Port your Python app listens on |
+| `PYTHON_BIN` | `/home/USERNAME/virtualenv/myapp/3.11/bin/python3` | Python interpreter (use the venv's directly) |
+| `APP_FILE` | `/home/USERNAME/myapp/app.py` | Backend entry file |
+| `LOG_FILE` | `/home/USERNAME/myapp/app.log` | Backend stdout/stderr log |
+| `START_CMD` | built from the three above | Full start command override |
+| `CHECK_INTERVAL` | `500` | Readiness poll interval (ms) |
+| `START_TIMEOUT` | `30000` | Max wait for backend startup (ms) |
+
+Node doesn't load `.env` files by itself. Set the variables in your hosting panel, or use [`dotenv`](https://www.npmjs.com/package/dotenv).
+
+## Usage
 
 ```bash
 node app.js
 ```
 
-* **Default proxy port:** 8080 (or cPanel-assigned port)
-* **Default backend port:** 8069
+On cPanel, point the Node.js app's startup file to `app.js`.
 
-The proxy handles **HTTP and WebSocket** traffic.
+Make sure your backend listens on `BACKEND_HOST:BACKEND_PORT` (for example `127.0.0.1:8069`).
 
----
+## Troubleshooting
 
-## 📂 Deploying on cPanel
+- **503 "Backend failed to start"**: check the file set in `LOG_FILE` for Python errors.
+- **502 "Bad gateway"**: the backend accepted the connection but failed while handling the request.
+- **Slow first request**: expected, since the backend is being started.
 
-1. Open **Setup Node.js App** in cPanel.
-2. Set **Application Startup File** to `app.js`.
-3. Click **Run NPM Install** in the cPanel interface.
-4. Open your app via your domain or assigned URL.
+## License
 
-> ✅ Your Python backend should always listen on a **local port**;
-> cProxy will forward public traffic to it automatically.
-
----
-
-## ✨ Features
-
-* Supports **HTTP and WebSocket** traffic
-* Queues requests until the backend is ready
-* Enables **Python ASGI apps** on shared hosting
-* Lightweight and easy to deploy
-
----
-
-## 📄 License
-
-MIT License © 2025 Arif Chowdhury
+MIT
